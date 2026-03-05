@@ -42,6 +42,7 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
   private OptionalLong istanbulBlockNumber = OptionalLong.empty();
   private OptionalLong muirGlacierBlockNumber = OptionalLong.empty();
   private OptionalLong berlinBlockNumber = OptionalLong.empty();
+  private OptionalLong falcon512BlockNumber = OptionalLong.empty();
   private OptionalLong londonBlockNumber = OptionalLong.empty();
   private OptionalLong arrowGlacierBlockNumber = OptionalLong.empty();
   private OptionalLong grayGlacierBlockNumber = OptionalLong.empty();
@@ -223,6 +224,9 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
   }
 
   @Override
+  public OptionalLong getFalcon512BlockNumber() { return falcon512BlockNumber; }
+
+  @Override
   public OptionalLong getLondonBlockNumber() {
     return londonBlockNumber;
   }
@@ -367,7 +371,8 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
     return thanosBlockNumber;
   }
 
-  @Override
+
+    @Override
   public OptionalLong getMagnetoBlockNumber() {
     return magnetoBlockNumber;
   }
@@ -418,6 +423,7 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
     getIstanbulBlockNumber().ifPresent(l -> builder.put("istanbulBlock", l));
     getMuirGlacierBlockNumber().ifPresent(l -> builder.put("muirGlacierBlock", l));
     getBerlinBlockNumber().ifPresent(l -> builder.put("berlinBlock", l));
+    getFalcon512BlockNumber().ifPresent(l -> builder.put("falcon512Block", l));
     getLondonBlockNumber().ifPresent(l -> builder.put("londonBlock", l));
     getArrowGlacierBlockNumber().ifPresent(l -> builder.put("arrowGlacierBlock", l));
     getGrayGlacierBlockNumber().ifPresent(l -> builder.put("grayGlacierBlock", l));
@@ -631,6 +637,17 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
     berlinBlockNumber = OptionalLong.of(blockNumber);
     return this;
   }
+
+    /**
+     * Falcon512 block stub genesis config options.
+     *
+     * @param blockNumber the block number
+     * @return the stub genesis config options
+     */
+    public StubGenesisConfigOptions falcon512Block(final long blockNumber) {
+        falcon512BlockNumber = OptionalLong.of(blockNumber);
+        return this;
+    }
 
   /**
    * London block stub genesis config options.

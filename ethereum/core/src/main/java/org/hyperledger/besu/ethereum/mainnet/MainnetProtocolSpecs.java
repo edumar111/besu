@@ -619,7 +619,8 @@ public abstract class MainnetProtocolSpecs {
       final MiningConfiguration miningConfiguration,
       final boolean isParallelTxProcessingEnabled,
       final MetricsSystem metricsSystem) {
-    return parisDefinition(
+    ProtocolSpecBuilder builder =
+        parisDefinition(
             chainId,
             enableRevertReason,
             genesisConfigOptions,
@@ -670,6 +671,12 @@ public abstract class MainnetProtocolSpecs {
         .withdrawalsValidator(new WithdrawalsValidator.AllowedWithdrawals())
         .blockHeaderValidatorBuilder(MainnetBlockHeaderValidator::noBlobBlockHeaderValidator)
         .hardforkId(SHANGHAI);
+
+    if (genesisConfigOptions.getFalcon512BlockNumber().isPresent()) {
+      builder.precompileContractRegistryBuilder(Falcon512ProtocolSpecs::istanbulWithFalcon);
+    }
+
+    return builder;
   }
 
   static ProtocolSpecBuilder cancunDefinition(
@@ -682,7 +689,8 @@ public abstract class MainnetProtocolSpecs {
       final MetricsSystem metricsSystem) {
     final long londonForkBlockNumber = genesisConfigOptions.getLondonBlockNumber().orElse(0L);
 
-    return shanghaiDefinition(
+    ProtocolSpecBuilder builder =
+        shanghaiDefinition(
             chainId,
             enableRevertReason,
             genesisConfigOptions,
@@ -756,10 +764,15 @@ public abstract class MainnetProtocolSpecs {
                         TransactionType.BLOB),
                     Set.of(BlobType.KZG_PROOF),
                     evm.getMaxInitcodeSize()))
-        .precompileContractRegistryBuilder(MainnetPrecompiledContractRegistries::cancun)
+        .precompileContractRegistryBuilder(
+            genesisConfigOptions.getFalcon512BlockNumber().isPresent()
+                ? Falcon512ProtocolSpecs::cancunWithFalcon
+                : MainnetPrecompiledContractRegistries::cancun)
         .blockHeaderValidatorBuilder(MainnetBlockHeaderValidator::blobAwareBlockHeaderValidator)
         .preExecutionProcessor(new CancunPreExecutionProcessor())
         .hardforkId(CANCUN);
+
+    return builder;
   }
 
   static ProtocolSpecBuilder cancunEOFDefinition(
@@ -812,7 +825,10 @@ public abstract class MainnetProtocolSpecs {
                         gasCalculator, chainId.orElse(BigInteger.ZERO), evmConfiguration))
 
             // EIP-2537 BLS12-381 precompiles
-            .precompileContractRegistryBuilder(MainnetPrecompiledContractRegistries::prague)
+            .precompileContractRegistryBuilder(
+                genesisConfigOptions.getFalcon512BlockNumber().isPresent()
+                    ? Falcon512ProtocolSpecs::pragueWithFalcon
+                    : MainnetPrecompiledContractRegistries::prague)
 
             // EIP-7002 Withdrawals / EIP-6610 Deposits / EIP-7685 Requests
             .requestsValidator(new MainnetRequestsValidator())
@@ -922,7 +938,10 @@ public abstract class MainnetProtocolSpecs {
                     Set.of(BlobType.KZG_CELL_PROOFS),
                     evm.getMaxInitcodeSize()))
         .transactionPoolPreProcessor(new OsakaTransactionPoolPreProcessor())
-        .precompileContractRegistryBuilder(MainnetPrecompiledContractRegistries::osaka)
+        .precompileContractRegistryBuilder(
+            genesisConfigOptions.getFalcon512BlockNumber().isPresent()
+                ? Falcon512ProtocolSpecs::osakaWithFalcon
+                : MainnetPrecompiledContractRegistries::osaka)
         .blockValidatorBuilder(MainnetBlockValidatorBuilder::osaka)
         .hardforkId(OSAKA);
   }
@@ -1079,7 +1098,10 @@ public abstract class MainnetProtocolSpecs {
                 miningConfiguration,
                 isParallelTxProcessingEnabled,
                 metricsSystem)
-            .precompileContractRegistryBuilder(MainnetPrecompiledContractRegistries::futureEips)
+            .precompileContractRegistryBuilder(
+                genesisConfigOptions.getFalcon512BlockNumber().isPresent()
+                    ? Falcon512ProtocolSpecs::futureEipsWithFalcon
+                    : MainnetPrecompiledContractRegistries::futureEips)
             .hardforkId(FUTURE_EIPS);
 
     return addEOF(chainId, evmConfiguration, protocolSpecBuilder);

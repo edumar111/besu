@@ -70,3 +70,10 @@ To learn how to run the tests and enable opcode-level JSON tracing for debugging
 [Besu User Documentation]: https://besu.hyperledger.org
 [Besu channel on Discord]: https://discord.com/invite/hyperledger
 [Contributing Guidelines]: CONTRIBUTING.md
+
+
+## Test Falcon Precompile Contract
+```bash
+./gradlew :evm:test --tests org.hyperledger.besu.evm.precompile.FalconPrecompiledContractTest
+```
+Result into `./evm/build/reports/tests/test/index.html` 

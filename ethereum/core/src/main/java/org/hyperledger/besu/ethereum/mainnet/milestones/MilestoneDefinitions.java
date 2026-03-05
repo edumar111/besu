@@ -171,7 +171,11 @@ public class MilestoneDefinitions {
         createBlockNumberMilestone(
             MainnetHardforkId.PARIS,
             config.getMergeNetSplitBlockNumber(),
-            () -> specFactory.parisDefinition(config)));
+            () -> specFactory.parisDefinition(config)),
+        createBlockNumberMilestone(
+            MainnetHardforkId.FALCON512,
+            config.getFalcon512BlockNumber(),
+            () -> specFactory.falcon512Definition(config)));
   }
 
   /**

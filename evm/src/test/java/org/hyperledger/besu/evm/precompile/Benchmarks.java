@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright ConsenSys AG.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -29,12 +29,17 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
 import org.apache.tuweni.bytes.Bytes;
+import java.io.IOException;
+import java.io.InputStream;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hyperledger.besu.evm.gascalculator.IstanbulGasCalculator;
 
 @SuppressWarnings("UnusedMethod")
 public class Benchmarks {
   static final Random random = new Random();
   static final long GAS_PER_SECOND_STANDARD = 100_000_000L;
-
+  static final int HASH_ITERATIONS = 10_000;
   static final int MATH_WARMUP = 15_000;
   static final int MATH_ITERATIONS = 1_000;
   static final MessageFrame fakeFrame =
@@ -84,7 +89,40 @@ public class Benchmarks {
       logPerformance("Secp256r1 signature verification", gasRequirement, timePerCallInNs);
     }
   }
+    private static void benchFalcon512() {
+        final FalconPrecompiledContract contract =
+                new FalconPrecompiledContract(new IstanbulGasCalculator());
+        final JsonNode falconVectors;
+        try (final InputStream testVectors =
+                     Benchmarks.class.getResourceAsStream("falconBenchVectors.json")) {
+            falconVectors = new ObjectMapper().readTree(testVectors);
 
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        for (int i = 0; i < MATH_WARMUP; i++) {
+            contract.computePrecompile(
+                    Bytes.fromHexString(falconVectors.get(0).get("Input").asText()), fakeFrame);
+        }
+        for (int len = 0; len < falconVectors.size(); len += 1) {
+            Bytes bytes = Bytes.fromHexString(falconVectors.get(len).get("Input").asText());
+            final Stopwatch timer = Stopwatch.createStarted();
+            for (int i = 0; i < HASH_ITERATIONS; i++) {
+                contract.computePrecompile(bytes, fakeFrame);
+            }
+            timer.stop();
+
+            final double elapsed = timer.elapsed(TimeUnit.NANOSECONDS) / 1.0e9D;
+            final double perCall = elapsed / HASH_ITERATIONS;
+            final double gasSpent = perCall * GAS_PER_SECOND_STANDARD;
+            System.out.printf(
+                    "falcon512 - iter #%,d - %,d message bytes for %,d gas. Charging %,d gas.%n",
+                    len,
+                    (len + 1) * 33,
+                    (int) gasSpent,
+                    contract.gasRequirement(bytes)); // every message increases in 33 bytes
+        }
+    }
   private static long runBenchmark(final Bytes arg, final PrecompiledContract contract) {
     if (contract.computePrecompile(arg, fakeFrame).output() == null) {
       throw new RuntimeException("Input is Invalid");
@@ -160,5 +198,6 @@ public class Benchmarks {
   public static void main(final String[] args) {
     logHeader();
     benchSecp256r1Verify();
+    benchFalcon512();
   }
 }

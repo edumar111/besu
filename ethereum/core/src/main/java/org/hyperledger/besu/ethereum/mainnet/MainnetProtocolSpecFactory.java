@@ -333,7 +333,16 @@ public class MainnetProtocolSpecFactory {
         isParallelTxProcessingEnabled,
         metricsSystem);
   }
-
+  public ProtocolSpecBuilder falcon512Definition(final GenesisConfigOptions genesisConfigOptions) {
+    return Falcon512ProtocolSpecs.postQuantumDefinition(
+        chainId,
+        isRevertReasonEnabled,
+        genesisConfigOptions,
+        evmConfiguration,
+        miningConfiguration,
+        isParallelTxProcessingEnabled,
+        metricsSystem);
+  }
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // Classic Protocol Specs

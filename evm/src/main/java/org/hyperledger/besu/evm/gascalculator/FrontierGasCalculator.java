@@ -24,6 +24,7 @@ import org.hyperledger.besu.datatypes.Transaction;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+
 import org.hyperledger.besu.evm.operation.ExpOperation;
 
 import java.util.function.Supplier;
@@ -54,6 +55,10 @@ public class FrontierGasCalculator implements GasCalculator {
   private static final long P256VERIFY_PRECOMPILED_GAS_COST = 6_900L;
 
   private static final long SHA256_PRECOMPILED_BASE_GAS_COST = 60L;
+
+    private static final long FALCON512_VERIFY_PRECOMPILED_BASE_GAS_COST = 1465L;
+
+    private static final long FALCON512_VERIFY_PRECOMPILED_WORD_GAS_COST = 6L;
 
   private static final long SHA256_PRECOMPILED_WORD_GAS_COST = 12L;
 
@@ -229,7 +234,11 @@ public class FrontierGasCalculator implements GasCalculator {
   public long sha256PrecompiledContractGasCost(final Bytes input) {
     return SHA256_PRECOMPILED_WORD_GAS_COST * numWords(input) + SHA256_PRECOMPILED_BASE_GAS_COST;
   }
-
+  @Override
+    public long falconVerifyPrecompiledContractGasCost(final Bytes input) {
+        return FALCON512_VERIFY_PRECOMPILED_WORD_GAS_COST * numWords(input)
+                + FALCON512_VERIFY_PRECOMPILED_BASE_GAS_COST;
+  }
   @Override
   public long ripemd160PrecompiledContractGasCost(final Bytes input) {
     return RIPEMD160_PRECOMPILED_WORD_GAS_COST * numWords(input)

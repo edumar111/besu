@@ -75,6 +75,8 @@ public interface HardforkId {
     GRAY_GLACIER(true, "Gray Glacier"),
     /** Paris fork. */
     PARIS(true, "Paris"),
+    /** Falcon-512 precompile activation fork. */
+    FALCON512(false, "Falcon512"),
     /** Shanghai fork. */
     SHANGHAI(true, "Shanghai"),
     /** Cancun fork. */

@@ -90,6 +90,9 @@ public class Address extends DelegatingBytes {
   /** The constant BLS12_MAP_FP2_TO_G2. */
   public static final Address BLS12_MAP_FP2_TO_G2 = Address.precompiled(0x11);
 
+  /** Constant for Precompiled Falcon verification signature. */
+  public static final Address FALCON512 = Address.precompiled(0x65);
+
   /** Precompile address for P256_VERIFY. */
   public static final Address P256_VERIFY = Address.precompiled(0x0100);
 

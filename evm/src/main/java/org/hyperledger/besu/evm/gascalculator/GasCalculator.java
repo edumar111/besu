@@ -39,6 +39,7 @@ import org.hyperledger.besu.evm.precompile.IDPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.RIPEMD160PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.SHA256PrecompiledContract;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
+import org.hyperledger.besu.evm.precompile.FalconPrecompiledContract;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -76,7 +77,16 @@ public interface GasCalculator {
    */
   long getEcrecPrecompiledContractGasCost();
 
-  /**
+    /**
+     * Returns the gas cost to execute the {@link FalconPrecompiledContract}.
+     *
+     * @param input The input representing the message, signature and the correspondent public key
+     * @return the gas cost to execute the Falcon Signature verification precompiled contract
+     */
+    long falconVerifyPrecompiledContractGasCost(Bytes input);
+
+
+    /**
    * Returns the gas cost to execute the {@link ECRECPrecompiledContract}.
    *
    * @return the gas cost to execute the P256Verify precompiled contract
