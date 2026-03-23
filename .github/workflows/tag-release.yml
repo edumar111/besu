@@ -1,0 +1,138 @@
+# .github/workflows/tag-release.yml
+name: Tag Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  JAVA_VERSION: '21'
+  GRADLE_OPTS: "-Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout tagged commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag and version
+        id: vars
+        shell: bash
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME}"
+          VERSION="${TAG_NAME#v}"
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?([.-](RC|rc|alpha|beta)[0-9]*)?$ ]]; then
+            echo "Formato inválido de tag: $TAG_NAME"
+            echo "Ejemplos válidos:"
+            echo "  v25.8.0"
+            echo "  v25.8.0.1"
+            echo "  v25.8.0-RC1"
+            echo "  v25.8.0.1-RC1"
+            exit 1
+          fi
+
+          IS_DRAFT=false
+          IS_PRERELEASE=false
+
+          if [[ "$TAG_NAME" =~ -RC[0-9]+$ ]] || [[ "$TAG_NAME" =~ -rc[0-9]+$ ]] || [[ "$TAG_NAME" =~ -alpha[0-9]*$ ]] || [[ "$TAG_NAME" =~ -beta[0-9]*$ ]]; then
+            IS_DRAFT=true
+            IS_PRERELEASE=true
+          fi
+
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "is_draft=$IS_DRAFT" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
+
+      - name: Show commit info
+        run: |
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          git log -1 --oneline
+          git branch -a --contains "$GITHUB_SHA" || true
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission to gradlew
+        run: chmod +x ./gradlew
+
+      - name: Build distributions
+        run: |
+          ./gradlew \
+            -Prelease.releaseVersion=${{ steps.vars.outputs.version }} \
+            -Pversion=${{ steps.vars.outputs.version }} \
+            clean assemble
+
+      - name: Verify distributions
+        run: |
+          ls -lah build/distributions
+          test -f "build/distributions/besu-${{ steps.vars.outputs.version }}.zip"
+          test -f "build/distributions/besu-${{ steps.vars.outputs.version }}.tar.gz"
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          cd build/distributions
+          sha256sum "besu-${{ steps.vars.outputs.version }}.zip" > "besu-${{ steps.vars.outputs.version }}.zip.sha256"
+          sha256sum "besu-${{ steps.vars.outputs.version }}.tar.gz" > "besu-${{ steps.vars.outputs.version }}.tar.gz.sha256"
+          ls -lah
+
+      - name: Create release notes
+        shell: bash
+        run: |
+          cat > release-notes.md <<EOF
+          ## ${{ steps.vars.outputs.tag_name }}
+
+          Release generado automáticamente desde el tag \`${{ steps.vars.outputs.tag_name }}\`.
+
+          Commit: \`${GITHUB_SHA}\`
+
+          Draft: \`${{ steps.vars.outputs.is_draft }}\`
+          Pre-release: \`${{ steps.vars.outputs.is_prerelease }}\`
+
+          ### Assets
+          - besu-${{ steps.vars.outputs.version }}.zip
+          - besu-${{ steps.vars.outputs.version }}.tar.gz
+          - besu-${{ steps.vars.outputs.version }}.zip.sha256
+          - besu-${{ steps.vars.outputs.version }}.tar.gz.sha256
+          EOF
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          EXTRA_ARGS=""
+
+          if [[ "${{ steps.vars.outputs.is_draft }}" == "true" ]]; then
+            EXTRA_ARGS="$EXTRA_ARGS --draft"
+          fi
+
+          if [[ "${{ steps.vars.outputs.is_prerelease }}" == "true" ]]; then
+            EXTRA_ARGS="$EXTRA_ARGS --prerelease"
+          fi
+
+          gh release create "${{ steps.vars.outputs.tag_name }}" \
+            "build/distributions/besu-${{ steps.vars.outputs.version }}.zip" \
+            "build/distributions/besu-${{ steps.vars.outputs.version }}.tar.gz" \
+            "build/distributions/besu-${{ steps.vars.outputs.version }}.zip.sha256" \
+            "build/distributions/besu-${{ steps.vars.outputs.version }}.tar.gz.sha256" \
+            --title "${{ steps.vars.outputs.tag_name }}" \
+            --notes-file release-notes.md \
+            --verify-tag \
+            ${EXTRA_ARGS}
