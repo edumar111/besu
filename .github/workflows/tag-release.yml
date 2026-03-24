@@ -43,8 +43,7 @@ jobs:
           IS_DRAFT=false
           IS_PRERELEASE=false
 
-          if [[ "$TAG_NAME" =~ -RC[0-9]+$ ]] || [[ "$TAG_NAME" =~ -rc[0-9]+$ ]] || [[ "$TAG_NAME" =~ -alpha[0-9]*$ ]] || [[ "$TAG_NAME" =~ -beta[0-9]*$ ]]; then
-            IS_DRAFT=true
+          if [[ "$VERSION" =~ ([.-](RC|rc|alpha|beta)[0-9]*)$ ]]; then
             IS_PRERELEASE=true
           fi
 
@@ -112,16 +111,20 @@ jobs:
           - besu-${{ steps.vars.outputs.version }}.tar.gz.sha256
           EOF
 
+      - name: Delete existing release if exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release view "${{ steps.vars.outputs.tag_name }}" >/dev/null 2>&1 && \
+          gh release delete "${{ steps.vars.outputs.tag_name }}" --yes || true
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           EXTRA_ARGS=""
-
-          if [[ "${{ steps.vars.outputs.is_draft }}" == "true" ]]; then
-            EXTRA_ARGS="$EXTRA_ARGS --draft"
-          fi
 
           if [[ "${{ steps.vars.outputs.is_prerelease }}" == "true" ]]; then
             EXTRA_ARGS="$EXTRA_ARGS --prerelease"
